@@ -139,7 +139,6 @@ m_os0 <- coxph(Surv(OS,Dead_y_n) ~ Protocol +
 summary(m_os0)
 summary(m_os0)$coefficients
 
-ggcoxzph(cox.zph(m_os))
 
 
 
