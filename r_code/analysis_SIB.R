@@ -1,16 +1,14 @@
-#Protocol
+# Protocol: SIB vs regular
 #=============
 
-#Log-rank tests
+#Basic log-rank tests
 #--------
-survdiff(Surv(PFS,Progression_y_n) ~ Protocol , data = dat, rho = 0)
-survdiff(Surv(PFS,Progression_y_n) ~ Protocol , data = dat, rho = 1)
-survdiff(Surv(OS,Dead_y_n) ~ Protocol , data = dat, rho = 0)
-survdiff(Surv(OS,Dead_y_n) ~ Protocol , data = dat, rho = 1)
+survdiff(Surv(PFS,Progression_or_Death_y_n) ~ Protocol , data = dat)
+survdiff(Surv(OS,Dead_y_n) ~ Protocol , data = dat)
 
 #KM curves
 #--------
-KM_P_PFS <- survfit(Surv(PFS,Progression_y_n) ~ Protocol , data = dat)
+KM_P_PFS <- survfit(Surv(PFS,Progression_or_Death_y_n) ~ Protocol , data = dat)
 plot_KM_P_PFS <- ggsurvplot(KM_P_PFS,
            pval = TRUE, conf.int = TRUE,
            risk.table = TRUE, # Add risk table
@@ -38,9 +36,15 @@ ggsurvplot(KM_P_OS,
 
 #Stage
 #=============
-KM_stage_PFS <- survfit(Surv(PFS,Progression_y_n) ~ Stage4_y_n , data = dat)
+#Basic log-rank tests
+#--------
+survdiff(Surv(PFS,Progression_or_Death_y_n) ~ Stage4_y_n , data = dat)
+survdiff(Surv(OS,Dead_y_n) ~ Stage4_y_n , data = dat)
 
-plot_KM_stage_PFS <- ggsurvplot(KM_stage,
+
+KM_stage_PFS <- survfit(Surv(PFS,Progression_or_Death_y_n) ~ Stage4_y_n , data = dat)
+
+plot_KM_stage_PFS <- ggsurvplot(KM_stage_PFS,
                      pval = TRUE, conf.int = TRUE,
                      risk.table = TRUE, # Add risk table
                      risk.table.col = "strata", # Change risk table color by groups
@@ -54,7 +58,7 @@ plot_KM_stage_PFS
 
 KM_stage_OS <- survfit(Surv(OS,Dead_y_n) ~ Stage4_y_n , data = dat)
 
-plot_KM_stage_OS <- ggsurvplot(KM_stage2,
+plot_KM_stage_OS <- ggsurvplot(KM_stage_OS,
                            pval = TRUE, conf.int = TRUE,
                            risk.table = TRUE, # Add risk table
                            risk.table.col = "strata", # Change risk table color by groups
@@ -68,8 +72,26 @@ plot_KM_stage_OS
 
 
 
-#Univariate analysis of prognostic factors
+#Univariate analysis of prog.
 #======================
+#PFS
+p <- coxph(Surv(PFS, Progression_or_Death_y_n) ~  Protocol , data = dat) 
+summary(p)
+age <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ Age + strata(Protocol), data = dat) 
+summary(age)
+weight <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ Weight + strata(Protocol), data = dat) 
+summary(weight)
+stage4 <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ Stage4_y_n + strata(Protocol), data = dat) 
+summary(stage4)
+epistaxis <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ Epistaxis + strata(Protocol), data = dat) 
+summary(epistaxis) #
+tumor_diff <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ Tumor_undifferentiated + strata(Protocol), data = dat) 
+summary(tumor_diff)
+tumor_code <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ TumorCode + strata(Protocol), data = dat) 
+summary(tumor_code)
+tumor_vol <- coxph(Surv(PFS, Progression_or_Death_y_n) ~ GTV + strata(Protocol), data = dat) 
+summary(tumor_vol)
+
 #OS
 p2 <- coxph(Surv(OS,Dead_y_n) ~  Protocol , data = dat) 
 summary(p2)
@@ -85,56 +107,38 @@ tumor_diff2 <- coxph(Surv(OS,Dead_y_n) ~ Tumor_undifferentiated + strata(Protoco
 summary(tumor_diff2)
 tumor_code2 <- coxph(Surv(OS,Dead_y_n) ~ TumorCode + strata(Protocol), data = dat) 
 summary(tumor_code2)
+tumor_vol2 <- coxph(Surv(OS,Dead_y_n) ~ GTV + strata(Protocol), data = dat) 
+summary(tumor_vol2)
 
-#PFS
-p <- coxph(Surv(PFS, Progression_y_n) ~  Protocol , data = dat) 
-summary(p)
-age <- coxph(Surv(PFS, Progression_y_n) ~ Age + strata(Protocol), data = dat) 
-summary(age)
-weight <- coxph(Surv(PFS, Progression_y_n) ~ Weight + strata(Protocol), data = dat) 
-summary(weight)
-stage4 <- coxph(Surv(PFS, Progression_y_n) ~ Stage4_y_n + strata(Protocol), data = dat) 
-summary(stage4)
-epistaxis <- coxph(Surv(PFS, Progression_y_n) ~ Epistaxis + strata(Protocol), data = dat) 
-summary(epistaxis)
-tumor_diff <- coxph(Surv(PFS, Progression_y_n) ~ Tumor_undifferentiated + strata(Protocol), data = dat) 
-summary(tumor_diff)
-tumor_code <- coxph(Surv(PFS, Progression_y_n) ~ TumorCode + strata(Protocol), data = dat) 
-summary(tumor_code)
 
 
 
 #full Cox model
 #------------------
 
-table(dat$Progression_y_n) #34 events
-m_pfs0 <- coxph(Surv(PFS,Progression_y_n) ~ Protocol + 
+table(dat$Progression_or_Death_y_n) #34 events
+m_pfs0 <- coxph(Surv(PFS,Progression_or_Death_y_n) ~ 
+                  Protocol + 
                   Stage4_y_n + 
-                  Tumor_undifferentiated + 
                   Age  + 
                   Weight + 
-                  #TumorCode +
-                  Epistaxis, 
+                  Epistaxis +
+                  GTV, 
                 data = dat) 
 summary(m_pfs0)
 summary(m_pfs0)$coefficients
-m_pfs <- coxph(Surv(PFS,Progression_y_n) ~ Protocol + Stage4_y_n , data = dat) 
-summary(m_pfs)
 
 table(dat$Dead_y_n) #39 events 
 m_os0 <- coxph(Surv(OS,Dead_y_n) ~ Protocol + 
                  Stage4_y_n + 
-                 Tumor_undifferentiated + 
                  Age  + 
                  Weight + 
-            #     TumorCode +
-                 Epistaxis, 
+                 Epistaxis +
+                 GTV, 
                data = dat) 
 summary(m_os0)
 summary(m_os0)$coefficients
 
-m_os <- coxph(Surv(OS,Dead_y_n) ~ Protocol + Stage4_y_n + Weight , data = dat) 
-summary(m_os)
 ggcoxzph(cox.zph(m_os))
 
 
